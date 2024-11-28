@@ -1,0 +1,41 @@
+{
+    "name": "mustafaculban/commonroom-php-sdk",
+    "description": "PHP SDK for Common Room API",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["commonroom", "api", "sdk"],
+    "authors": [
+        {
+            "name": "Mustafa Culban",
+            "email": "mustafaculban1@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "mockery/mockery": "^1.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "CommonRoom\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CommonRoom\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-coverage": "phpunit --coverage-html coverage"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

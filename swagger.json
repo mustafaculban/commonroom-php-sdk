@@ -1,0 +1,2390 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Common Room Core API",
+    "version": "1.0.0",
+    "description": "Common Room Core REST APIs for getting data in to Common Room.\n<br/><br/>\nFor SCIM APIs <a href=\"./scim.html\">see the SCIM documentation</a>.\n<br/><br/>\nTo use the Common Room API, or get started with the Common Room Zapier integration, you will need to create an API token.\nTo create an API token:\n<ol>\n  <li>Navigate to Setting | API tokens\n  <li>Create a “New Token\"\n</ol>\n\n# Authentication\n\n<!-- ReDoc-Inject: <security-definitions> -->",
+    "x-logo": {
+      "url": "/common-room-api-logo.svg"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Use a Core API JWT as a Bearer token in the Authentication header.\n\nTokens can be created by room Owners through https://app.commonroom.io/\n\nExample:\n\n```\ncurl -H \"Authorization: Bearer abcd123.xzy\" \\\n  https://api.commonroom.io/community/v1\n````\n"
+      }
+    },
+    "headers": {
+      "X-RateLimit-Limit": {
+        "description": "The total amount of requests permitted within the interval",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Remaining": {
+        "description": "The total amount of requests remaining within the interval",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "responses": {
+      "RateLimited": {
+        "description": "Rate Limited",
+        "headers": {
+          "X-RateLimit-Limit": {
+            "$ref": "#/components/headers/X-RateLimit-Limit"
+          },
+          "X-RateLimit-Remaining": {
+            "$ref": "#/components/headers/X-RateLimit-Remaining"
+          },
+          "X-RateLimit-Reset": {
+            "description": "The datetime in epoch seconds when the interval resets",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "Retry-After": {
+            "description": "The UTC datetime when the interval resets",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                },
+                "rateLimit": {
+                  "type": "object",
+                  "description": "A summary of the rate limit encountered, additional information is available in the headers.",
+                  "properties": {
+                    "intervalLimit": {
+                      "type": "number",
+                      "description": "The total amount of requests permitted within the interval"
+                    },
+                    "intervalRemaining": {
+                      "type": "number",
+                      "description": "The amount of requests remaining within the interval"
+                    },
+                    "intervalResetSeconds": {
+                      "type": "number",
+                      "description": "The amount of time in seconds representing a single interval"
+                    },
+                    "waitMs": {
+                      "type": "number",
+                      "description": "The amount of time to wait until the next interval"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "InvalidRequest": {
+        "description": "Invalid Request",
+        "headers": {
+          "X-RateLimit-Limit": {
+            "$ref": "#/components/headers/X-RateLimit-Limit"
+          },
+          "X-RateLimit-Remaining": {
+            "$ref": "#/components/headers/X-RateLimit-Remaining"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "description": "A reason of `invalid-request-body` indicates that the request body did not match the schema required by our API docs. Please double-check that your request body matches the schema above, and contact us for help if you continue to experience issues."
+                },
+                "docs": {
+                  "type": "string",
+                  "description": "A link to this API documentation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "customFields": {
+      "single": {
+        "type": "object",
+        "title": "single-value field",
+        "properties": {
+          "socialType": {
+            "type": "string",
+            "example": "email",
+            "description": "Must be email, twitter, github, or linkedin"
+          },
+          "value": {
+            "type": "string",
+            "example": "email@domail.com",
+            "description": "Value corresponding to socialType"
+          },
+          "customFieldId": {
+            "type": "number",
+            "description": "ID of the custom field to set",
+            "example": 12345
+          },
+          "customFieldValue": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "enum, string, date, int, url, boolean",
+                "example": "boolean"
+              },
+              "value": {
+                "description": "Value of custom field",
+                "example": true
+              }
+            }
+          }
+        }
+      },
+      "multi": {
+        "type": "object",
+        "title": "multi-select field",
+        "properties": {
+          "socialType": {
+            "type": "string",
+            "example": "email",
+            "description": "Must be email, twitter, github, or linkedin"
+          },
+          "value": {
+            "type": "string",
+            "example": "email@domail.com",
+            "description": "Value corresponding to socialType"
+          },
+          "customFieldId": {
+            "type": "number",
+            "description": "ID of the custom field to set",
+            "example": 12345
+          },
+          "customFieldValues": {
+            "description": "An array of all values the contact should have for this field. Any currently-assigned values not present in this array will be removed.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "enum",
+                  "example": "enum"
+                },
+                "value": {
+                  "description": "Value of custom field",
+                  "example": "value1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ApiToken": {
+        "type": "object",
+        "properties": {
+          "jti": {
+            "type": "string",
+            "example": "tcpgph92"
+          },
+          "communityName": {
+            "type": "string",
+            "example": "Uncommon"
+          },
+          "communityId": {
+            "type": "string",
+            "example": "8p980hdo0"
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "failure",
+              "not-found"
+            ],
+            "example": "success"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "example": {
+          "status": "not created",
+          "errors": [
+            "name is missing"
+          ]
+        }
+      },
+      "ApiTagAssignmentById": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "id"
+            ]
+          },
+          "id": {
+            "description": "ID of the tag to assign, taken from the tag API",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ]
+      },
+      "ApiTagAssignmentByName": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "name"
+            ]
+          },
+          "name": {
+            "description": "Name of the tag to assign.\n\nThis will assign an existing label if a matching one is found by name, otherwise a new label will be created and assigned.\n",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ]
+      },
+      "ApiTagAssignment": {
+        "type": "object",
+        "description": "Optional List of tags to assign",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ApiTagAssignmentById"
+          },
+          {
+            "$ref": "#/components/schemas/ApiTagAssignmentByName"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "id": "#/components/schemas/ApiTagAssignmentById",
+            "name": "#/components/schemas/ApiTagAssignmentByName"
+          }
+        }
+      },
+      "ApiCustomFields": {
+        "type": "object",
+        "description": "Optional list of custom fields to update",
+        "properties": {
+          "id": {
+            "description": "ID of the custom field to update which you can retrieve using the /members/customFields endpoint.",
+            "type": "number"
+          },
+          "value": {
+            "type": "object",
+            "description": "The value of the custom field. Important: Omitting this field will clear the custom field value and cannot be undone.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "The defined type of the custom field",
+                "enum": [
+                  "enum",
+                  "string",
+                  "date",
+                  "int",
+                  "number",
+                  "url",
+                  "boolean"
+                ],
+                "example": "boolean"
+              },
+              "value": {
+                "description": "The updated value of the custom field.",
+                "example": true,
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "url"
+                  },
+                  {
+                    "type": "date",
+                    "description": "Only supports ISO 8601 date format (YYYY-MM-DD)."
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "description": "Only applicable for multivalue string custom fields."
+                        },
+                        {
+                          "type": "number",
+                          "description": "Only applicable for multi-value number custom fields."
+                        },
+                        {
+                          "type": "date",
+                          "description": "Only applicable for multivalue date custom fields."
+                        },
+                        {
+                          "type": "url",
+                          "description": "Only applicable for multivalue URL custom fields."
+                        },
+                        {
+                          "type": "boolean",
+                          "description": "Only applicable for multivalue boolean custom fields."
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "ApiUser": {
+        "type": "object",
+        "description": "Information about a user. Provide as many fields as possible to enable better matching and merging into a single Common Room profile.",
+        "properties": {
+          "id": {
+            "description": "Unique identifier for the user within this source (identifier unrelated to Common Room). This ID must be unique for each individual user, and should be generated by the third party system you are pulling data from (this ID does _not_ come from Common Room). Used as the primary key for this user within this source, to group all the user's activity together.",
+            "type": "string"
+          },
+          "fullName": {
+            "description": "The full name of the user.",
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "description": "The first name of the user. Used if no full name given.",
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "description": "The last name of the user. Used if no full name given.",
+            "type": "string",
+            "nullable": true
+          },
+          "username": {
+            "description": "The username the user.",
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "description": "The url for the users avatar.",
+            "type": "string",
+            "nullable": true
+          },
+          "bio": {
+            "description": "The biography for the user, to be used in the contact's \"About\" section.",
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "description": "The email for the user, used to help enrich details about the person.",
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "linkedin": {
+            "description": "Information about the users LinkedIn account",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "handle"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "Parsable value which includes the LinkedIn handle.",
+                "example": "in/person"
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ],
+            "nullable": true
+          },
+          "github": {
+            "description": "Information about the users Github account",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "handle"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "Parsable value which includes their github handle, eg \"Person\" from https://github.com/Person",
+                "example": "Person"
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ],
+            "nullable": true
+          },
+          "twitter": {
+            "description": "Information about the users Twitter account",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "handle"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "Parsable value which includes their twitter handle, eg @Person or Person",
+                "example": "@Person"
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ],
+            "nullable": true
+          },
+          "discord": {
+            "description": "Information about the users Discord account, taken from the form username#discriminator",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "username"
+                ]
+              },
+              "username": {
+                "type": "string",
+                "example": "person"
+              },
+              "discriminator": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "example": 1234
+              }
+            },
+            "required": [
+              "username",
+              "discriminator"
+            ],
+            "nullable": true
+          },
+          "externalProfiles": {
+            "description": "An optional list of known external profiles.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "The url of the external profile referenced"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name to use when rendering the external profile url"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            },
+            "nullable": true
+          },
+          "roleAtCompany": {
+            "description": "The users role at their company, such as Engineering, Marketing, Sales",
+            "type": "string",
+            "example": "Engineering",
+            "nullable": true
+          },
+          "titleAtCompany": {
+            "description": "The users title at their company",
+            "type": "string",
+            "nullable": true
+          },
+          "companyName": {
+            "description": "The name of the users company",
+            "type": "string",
+            "example": "Common Room",
+            "nullable": true
+          },
+          "companyDomain": {
+            "description": "The web domain of the users company",
+            "type": "string",
+            "example": "commonroom.io",
+            "nullable": true
+          },
+          "country": {
+            "description": "The country the user resides in",
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "description": "The city the user resides in",
+            "type": "string",
+            "nullable": true
+          },
+          "region": {
+            "description": "The state, prefecture or region the user resides in, such as Washington, New York, Ontario, New South Whales",
+            "type": "string",
+            "example": "Washington",
+            "nullable": true
+          },
+          "rawLocation": {
+            "description": "Loose description of a location to be interpreted, such as 'Seattle, WA', USA, Kyiv, Ukraine, Hong Kong",
+            "type": "string",
+            "example": "Seattle, WA",
+            "nullable": true
+          },
+          "tags": {
+            "description": "Optional list of contact tags to assign to this user",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiTagAssignment"
+            }
+          },
+          "customFields": {
+            "description": "Optional list of custom fields to update for this user",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiCustomFields"
+            }
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "CommunityMember": {
+        "CommunityMember": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "example": 147920
+            }
+          }
+        }
+      },
+      "TextContent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "Plain text content of the activity"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      },
+      "MarkdownContent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "markdown"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "Markdown content of the activity"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      },
+      "ApiActivity": {
+        "type": "object",
+        "description": "Information about an activity that occurred",
+        "properties": {
+          "id": {
+            "description": "Unique identifier for the activity within this source. This ID must be unique for each individual activity, and should be generated by the third party system you are pulling data from (this ID does _not_ come from Common Room). Used to deduplicate and keep the latest values for a given activity when combined with the activityType.",
+            "type": "string"
+          },
+          "activityType": {
+            "description": "Type of activity being added or edited. Check /activityTypes route for accepted values. Used to deduplicate and keep the latest values for a given activity when combined with the id.",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/ApiUser"
+          },
+          "activityTitle": {
+            "description": "An optional title to use when rendering the activity. Useful for things like a post title, merge request title, etc.",
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextContent"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "text": "#/components/schemas/TextContent"
+              }
+            },
+            "nullable": true
+          },
+          "content": {
+            "description": "Optional content to display when rendering the activity, used to hold a message which was posted or information about what occurred.",
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextContent"
+              },
+              {
+                "$ref": "#/components/schemas/MarkdownContent"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "text": "#/components/schemas/TextContent",
+                "markdown": "#/components/schemas/MarkdownContent"
+              }
+            },
+            "nullable": true
+          },
+          "timestamp": {
+            "description": "Time the activity occurred, current UTC time is used if not supplied",
+            "type": "string",
+            "format": "date-time"
+          },
+          "url": {
+            "description": "URL pointing to the activity on a third party source, allows linking from Common Room to the source activity",
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "description": "Optional list of activity tags to assign to this activity",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiTagAssignment"
+            }
+          },
+          "parentActivity": {
+            "description": "Optional field which allows for \"conversational threading\", structuring activities as nested, associated with or in reply to another activity.",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier of another activity which should be treated as a conversational \"parent\" of this activity."
+              },
+              "activityType": {
+                "type": "string",
+                "description": "Activity type of the parent activity"
+              }
+            },
+            "required": [
+              "id",
+              "activityType"
+            ],
+            "nullable": true
+          },
+          "subSource": {
+            "description": "Optional \"sub source\" the activity took place in. This allows further sub-dividing the sources data into third-party concepts like a slack channel, github repository or meetup group. Common examples include a slack channel name, meetup group hosting an event, a github repo an issue was created in.",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "name"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the sub source",
+                "example": "slack-channel-1"
+              }
+            },
+            "required": [
+              "type",
+              "name"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "activityType",
+          "user"
+        ]
+      },
+      "ApiTagUpdateProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of the tag",
+            "type": "string"
+          },
+          "description": {
+            "description": "Optional description of the tag",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "ApiTagCreationProperties": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiTagUpdateProperties"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "entityTypes": {
+                "description": "The list of entity types the tag may be assigned to",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "member",
+                    "activity",
+                    "company"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "required": [
+          "name",
+          "entityTypes"
+        ]
+      },
+      "ApiTag": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiTagCreationProperties"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "Unique identifier for this tag",
+                "type": "string"
+              },
+              "createdAt": {
+                "description": "The date-time the tag was created in ISO8601 format",
+                "type": "string",
+                "format": "date-time"
+              },
+              "deletedAt": {
+                "description": "The date-time the tag was deleted in ISO8601 format",
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
+          }
+        ],
+        "required": [
+          "id",
+          "createdAt"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.commonroom.io/community/v1",
+      "description": "Common Room Core API Production Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Contacts"
+    },
+    {
+      "name": "Activities"
+    },
+    {
+      "name": "Segments"
+    },
+    {
+      "name": "Tags"
+    },
+    {
+      "name": "Right to be Forgotten"
+    }
+  ],
+  "paths": {
+    "/api-token-status": {
+      "get": {
+        "summary": "API Token status information",
+        "description": "Status information about the API token used in the request.\n",
+        "responses": {
+          "200": {
+            "description": "Core API Token Information",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiToken"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status",
+                  "example": {
+                    "status": "forbidden"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/source/{destinationSourceId}/user": {
+      "post": {
+        "description": "Adds a new user into the destination source, or updates existing user previously added via API with the same ID\n",
+        "summary": "Add or Edit User",
+        "tags": [
+          "Contacts"
+        ],
+        "operationId": "addUpdateUserToSource",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "destinationSourceId",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true,
+            "description": "The Destination Source ID of the created API signal. See https://www.commonroom.io/docs/signals/custom-integrations/zapier-api/#create-an-api-signal for details."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiUser"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "OK - User info accepted and will be processed",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Destination Source Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/members/": {
+      "post": {
+        "description": "Create or Update a Contact\n",
+        "summary": "Create or update Contact",
+        "tags": [
+          "Contacts"
+        ],
+        "deprecated": true,
+        "operationId": "createOrUpdateContact",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "description": "Source of the information"
+                  },
+                  "fullName": {
+                    "type": "string",
+                    "example": "Greg"
+                  },
+                  "avatarUrl": {
+                    "type": "string",
+                    "example": "https://img.example.com/profile/zyx.png"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Contact Bio"
+                  },
+                  "socials": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "title": "social",
+                          "description": "A user's handle on a social network",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "github",
+                                "linkedin",
+                                "twitter",
+                                "youtube",
+                                "discord"
+                              ]
+                            },
+                            "value": {
+                              "type": "object",
+                              "title": "social.handle",
+                              "properties": {
+                                "handle": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "title": "email",
+                          "description": "A user's email address",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "email"
+                              ]
+                            },
+                            "value": {
+                              "type": "string",
+                              "description": "email address"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "segment": {
+                    "type": "number",
+                    "description": "Segment Id"
+                  },
+                  "company": {
+                    "type": "string",
+                    "description": "Name of the organization the contact is employed at",
+                    "example": "Common Room"
+                  },
+                  "domain": {
+                    "type": "string",
+                    "description": "Domain of the organization the contact is employed at",
+                    "example": "commonroom.io"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Contact's job title",
+                    "example": "CFO"
+                  },
+                  "role": {
+                    "type": "string",
+                    "description": "Contact's job category",
+                    "example": "Finance"
+                  },
+                  "location": {
+                    "type": "object",
+                    "description": "Geographical data for the user",
+                    "properties": {
+                      "city": {
+                        "type": "string",
+                        "description": "The city where the user lives",
+                        "example": "San Francisco"
+                      },
+                      "region": {
+                        "type": "string",
+                        "description": "The state or province where the user lives",
+                        "example": "California"
+                      },
+                      "country": {
+                        "type": "string",
+                        "description": "The country where the user lives",
+                        "example": "United States of America"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "source"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/members/note": {
+      "post": {
+        "description": "Add a Note to a Contact\n",
+        "summary": "Add a Note to a Contact",
+        "tags": [
+          "Contacts"
+        ],
+        "operationId": "addNoteToContact",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "socialType": {
+                    "type": "string",
+                    "example": "email",
+                    "description": "Must be email, twitter, github, or linkedin"
+                  },
+                  "value": {
+                    "type": "string",
+                    "example": "email@domail.com",
+                    "description": "Value corresponding to socialType"
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "Note content"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Contact Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/members/customFields": {
+      "get": {
+        "description": "Gets all contact custom fields for a room\n",
+        "summary": "Gets all contact custom fields for a room",
+        "tags": [
+          "Contacts"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "destinationSourceId",
+            "schema": {
+              "type": "string",
+              "description": "If a value is provided provided, the API will only return custom fields that can be written to by the specified destination source"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "type",
+                      "multivalue"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "number",
+                        "description": "Custom field ID",
+                        "example": 12345
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Custom field name",
+                        "example": "Preferred programming language"
+                      },
+                      "type": {
+                        "type": "string",
+                        "description": "Custom field type",
+                        "example": "enum"
+                      },
+                      "multivalue": {
+                        "type": "boolean",
+                        "description": "Whether the custom field accepts multiple assigned values",
+                        "example": false
+                      },
+                      "values": {
+                        "type": "array",
+                        "description": "Array of acceptable values if the custom field type is an `enum`.",
+                        "items": {
+                          "type": "string",
+                          "example": "Python"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "deprecated": true,
+        "description": "Set an existing Custom Field for a Contact\n",
+        "summary": "Set an existing Custom Field for a Contact",
+        "tags": [
+          "Contacts"
+        ],
+        "operationId": "setContactCustomFieldValue",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/customFields/single"
+                  },
+                  {
+                    "$ref": "#/components/customFields/multi"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Contact or Custom Field Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/members/tags": {
+      "post": {
+        "description": "Adds a new or existing tag to a Contact\n",
+        "summary": "Adds a new or existing tag to a Contact",
+        "tags": [
+          "Contacts"
+        ],
+        "operationId": "addTagsToContact",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "socialType": {
+                    "type": "string",
+                    "example": "email",
+                    "description": "Must be email, twitter, github, or linkedin"
+                  },
+                  "value": {
+                    "type": "string",
+                    "example": "email@domail.com",
+                    "description": "Value corresponding to socialType"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "Comma separated list of tags",
+                    "example": "tag1, tag2, tag3"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Contact Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/user/{email}": {
+      "summary": "Represents a Contact",
+      "description": "Represents a Contact associated with an email address within the room\nidentified by the authentication scheme.\n",
+      "parameters": [
+        {
+          "name": "email",
+          "schema": {
+            "type": "string",
+            "format": "email",
+            "example": "contact@example.commonroom.io"
+          },
+          "in": "path",
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "Get Contact by E-Mail",
+        "description": "A Contact's profile based on an email address.",
+        "tags": [
+          "Contacts"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommunityMember"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Anonymize Contact",
+        "description": "Request removal of all personally identifiable information (PII) for the\nContact associated by this email address.\n\nThis does not immediately anonymize the contact. The anonymization\nis queued and will happen at a future time within 15 days.\n",
+        "tags": [
+          "Contacts",
+          "Right to be Forgotten"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#../"
+                },
+                "example": {
+                  "status": "success"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/members": {
+      "parameters": [
+        {
+          "in": "query",
+          "name": "twitter",
+          "schema": {
+            "type": "string",
+            "example": "twitterHandle"
+          }
+        },
+        {
+          "in": "query",
+          "name": "email",
+          "schema": {
+            "type": "string",
+            "example": "email@domain.com"
+          }
+        },
+        {
+          "in": "query",
+          "name": "github",
+          "schema": {
+            "type": "string",
+            "example": "githubHandle"
+          }
+        },
+        {
+          "in": "query",
+          "name": "linkedin",
+          "schema": {
+            "type": "string",
+            "example": "in/username"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Get Contact By E-Mail or Socials",
+        "tags": [
+          "Contacts"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fullName": {
+                        "type": "string",
+                        "example": "Greg"
+                      },
+                      "activities_count": {
+                        "type": "number"
+                      },
+                      "avatar": {
+                        "type": "string",
+                        "description": "Avatar URL string"
+                      },
+                      "bio": {
+                        "type": "string"
+                      },
+                      "organization": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "first_seen": {
+                        "type": "string",
+                        "description": "Date when contact appeared in your room in ISO 8601 format"
+                      },
+                      "last_active": {
+                        "type": "string",
+                        "description": "Date of the contact's last activity in ISO 8601 format"
+                      },
+                      "location": {
+                        "type": "object"
+                      },
+                      "member_tags": {
+                        "type": "array"
+                      },
+                      "segments": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "number"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "twitter": {
+                        "type": "string"
+                      },
+                      "github": {
+                        "type": "string"
+                      },
+                      "linkedin": {
+                        "type": "string"
+                      },
+                      "discord": {
+                        "type": "string"
+                      },
+                      "youtube": {
+                        "type": "string"
+                      },
+                      "common_room_member_url": {
+                        "type": "string"
+                      },
+                      "custom_fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string",
+                              "description": "enum, string, date, int, url, boolean",
+                              "example": "boolean"
+                            },
+                            "value": {
+                              "description": "Value of custom field",
+                              "example": true
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parameter Error",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/source/{destinationSourceId}/activity": {
+      "post": {
+        "description": "Adds new activity into the destination source, or updates existing activity previously added via API with the same activity ID and activity type\n",
+        "summary": "Add or Edit Activity",
+        "tags": [
+          "Activities"
+        ],
+        "operationId": "addUpdateActivityToSource",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "destinationSourceId",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true,
+            "description": "The Destination Source ID of the created API signal. See https://www.commonroom.io/docs/signals/custom-integrations/zapier-api/#create-an-api-signal for details."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiActivity"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "OK - Activity info accepted and will be processed",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Destination Source Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/activities": {
+      "post": {
+        "description": "Add an activity to existing contact(s) with matching socials\n",
+        "summary": "Add an activity to existing contact(s)",
+        "tags": [
+          "Activities"
+        ],
+        "deprecated": true,
+        "operationId": "createUserInputActivity",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "description": "Source of the information"
+                  },
+                  "socialType": {
+                    "type": "string",
+                    "example": "email",
+                    "description": "Must be email, twitter, github, or linkedin"
+                  },
+                  "value": {
+                    "type": "string",
+                    "example": "email@domail.com",
+                    "description": "Value corresponding to socialType"
+                  },
+                  "activityType": {
+                    "type": "object",
+                    "example": "link",
+                    "description": "ActivityType. Use the GetActivityType API to get a list of types"
+                  },
+                  "activityBody": {
+                    "type": "string"
+                  },
+                  "occurredAt": {
+                    "type": "string",
+                    "description": "Date when the activity occurred in ISO 8601 format",
+                    "example": "2021-08-19T05:43:45.677Z"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "Comma separated string of tags to apply to the activity",
+                    "example": "Tag1, Tag2"
+                  }
+                },
+                "required": [
+                  "source",
+                  "socialType",
+                  "value",
+                  "activityType",
+                  "activityBody"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/activityTypes": {
+      "get": {
+        "description": "Gets all activity types\n",
+        "summary": "Get Activity Types",
+        "tags": [
+          "Activities"
+        ],
+        "operationId": "getActivityTypes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "example": "started_training"
+                      },
+                      "displayName": {
+                        "type": "string",
+                        "example": "Started training"
+                      },
+                      "name": {
+                        "type": "string",
+                        "example": "started_training",
+                        "deprecated": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/segments": {
+      "get": {
+        "description": "Gets all segments in a room\n",
+        "summary": "Get segments in a room",
+        "tags": [
+          "Segments"
+        ],
+        "operationId": "getSegments",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number",
+                        "description": "Segment id"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Display name of segment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/segments/:id/status": {
+      "get": {
+        "description": "Gets all status for a segment\n",
+        "summary": "Gets all status for a segment",
+        "tags": [
+          "Segments"
+        ],
+        "operationId": "getSegmentStatuses",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number",
+                        "description": "Status id"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Display text of status"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/segments/:id": {
+      "post": {
+        "description": "Add existing contacts to an existing segment\n",
+        "summary": "Add Contact(s) to Segment",
+        "tags": [
+          "Segments"
+        ],
+        "operationId": "addContactsToSegment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "socialType": {
+                    "type": "string",
+                    "example": "email",
+                    "description": "Must be email, twitter, github, or linkedin"
+                  },
+                  "value": {
+                    "type": "string",
+                    "example": "email@domail.com, email2@domain.org",
+                    "description": "Comma separated list of values corresponding to socialType"
+                  },
+                  "statusId": {
+                    "type": "number",
+                    "example": 1234
+                  }
+                },
+                "required": [
+                  "socialType",
+                  "value"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/segments/note": {
+      "post": {
+        "description": "Add a Note to a Segment\n",
+        "summary": "Add a Note to a Segment",
+        "tags": [
+          "Segments"
+        ],
+        "operationId": "addNoteToSegment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "segmentId": {
+                    "type": "number",
+                    "example": 12345
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "Note content"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/tags": {
+      "get": {
+        "description": "Returns the list of user defined tags\n",
+        "summary": "List Tags",
+        "tags": [
+          "Tags"
+        ],
+        "operationId": "listTags",
+        "responses": {
+          "200": {
+            "description": "List of non-deleted user defined tags",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ApiTag"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a new tag if no matching tag already exists, otherwise returns the existing tag.\n",
+        "summary": "Add Tag",
+        "tags": [
+          "Tags"
+        ],
+        "operationId": "createTag",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiTagCreationProperties"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tag created",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTag"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/tags/{id}": {
+      "get": {
+        "description": "Returns the tag for a given id\n",
+        "summary": "Get Tag",
+        "tags": [
+          "Tags"
+        ],
+        "operationId": "getTag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The Tag ID to fetch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching tag",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTag"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Tag Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "post": {
+        "description": "Updates the name or description for a given id.\n\nIf the tag is deleted, it will be undeleted on update.\n",
+        "summary": "Update Tag",
+        "tags": [
+          "Tags"
+        ],
+        "operationId": "updateTag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The Tag ID to fetch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiTagUpdateProperties"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated tag",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTag"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Tag Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "delete": {
+        "description": "Deletes the tag for a given id.\n\nDeleting the tag will remove it from everywhere you added it, and might break alerts or workflows that depend on it.\n",
+        "summary": "Delete Tag",
+        "tags": [
+          "Tags"
+        ],
+        "operationId": "deleteTag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The Tag ID to fetch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK - Tag deleted",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Tag Not Found",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Common Room PHP SDK
 
-Official PHP SDK for Common Room API integration.
+Un-Official PHP SDK for Common Room API integration.
 
 ## Installation
 
